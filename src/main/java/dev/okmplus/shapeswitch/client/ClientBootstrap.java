@@ -4,6 +4,7 @@ import dev.okmplus.shapeswitch.OkmShapeSwitch;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
@@ -25,11 +26,15 @@ public final class ClientBootstrap {
     }
 
     public static void init(IEventBus modBus, ModContainer container) {
+        OkmShapeSwitch.LOGGER.info("[ShapeSwitch] 客户端初始化，OKM 已加载={}",
+                ModList.get().isLoaded(OkmShapeSwitch.OKM_MOD_ID));
+
         modBus.addListener(ClientBootstrap::onRegisterGuiLayers);
         modBus.addListener(ClientBootstrap::onConfigEvent);
 
         NeoForge.EVENT_BUS.addListener(ShapeScrollHandler::onScroll);
         NeoForge.EVENT_BUS.addListener(ShapePreviewRenderer::onRenderHighlight);
+        NeoForge.EVENT_BUS.addListener(ShapeSwitchDiagnostics::onClientTick);
 
         // 模组列表里的“配置”按钮 -> NeoForge 通用配置界面。
         container.registerExtensionPoint(IConfigScreenFactory.class,
@@ -38,6 +43,7 @@ public final class ClientBootstrap {
 
     private static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(VanillaGuiLayers.HOTBAR, WHEEL_LAYER, ShapeWheelOverlay::render);
+        OkmShapeSwitch.LOGGER.info("[ShapeSwitch] 形状轮盘 HUD 已注册");
     }
 
     private static void onConfigEvent(ModConfigEvent event) {

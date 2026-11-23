@@ -2,21 +2,15 @@ package dev.okmplus.shapeswitch.client;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import org.xiyu.onekeyminer.api.OneKeyMinerAPI;
-import org.xiyu.onekeyminer.shape.ChainShape;
-
-import dev.okmplus.shapeswitch.OkmShapeSwitch;
 
 /**
  * 当前所有可轮换的挖掘形状。
  *
- * <p>直接读取 OKM 的 {@link OneKeyMinerAPI#getRegisteredShapes()}，因此其它附属模组
- * 注册的自定义形状也会自动出现在轮盘里，不需要额外适配。</p>
+ * <p>通过 {@link OkmBridge} 反射读取 OKM 的形状注册表，因此其它附属模组注册的
+ * 自定义形状也会自动出现，并且不依赖 OKM 的具体发布包（universal / neoforge / dev）。</p>
  */
 public final class ShapeCatalog {
 
@@ -32,7 +26,6 @@ public final class ShapeCatalog {
     /** HUD 每帧都会问一次，避免每帧重建列表。 */
     private static List<Entry> cached = List.of();
     private static String cachedSignature = "";
-    private static boolean warnedMergedJar;
 
     private ShapeCatalog() {
     }
@@ -43,13 +36,11 @@ public final class ShapeCatalog {
      * <p>配置或形状注册表变化时自动重建缓存。</p>
      */
     public static List<Entry> entries() {
-        List<ChainShape> shapes;
-        try {
-            shapes = OneKeyMinerAPI.getRegisteredShapes();
-        } catch (RuntimeException | LinkageError e) {
+        if (!OkmBridge.available()) {
             return List.of();
         }
-        if (shapes == null || shapes.isEmpty()) {
+        List<?> shapes = OkmBridge.registeredShapes();
+        if (shapes.isEmpty()) {
             return List.of();
         }
 
@@ -59,63 +50,31 @@ public final class ShapeCatalog {
             return cached;
         }
 
-        try {
-            List<Entry> out = new ArrayList<>(shapes.size());
-            for (ChainShape shape : shapes) {
-                if (shape == null) {
-                    continue;
-                }
-                ResourceLocation id;
-                try {
-                    id = shape.getId();
-                } catch (RuntimeException | LinkageError e) {
-                    continue;
-                }
-                if (id == null) {
-                    continue;
-                }
-                String idString = id.toString();
-                if (excluded.contains(idString)) {
-                    continue;
-                }
-                String key;
-                try {
-                    key = shape.getTranslationKey();
-                } catch (RuntimeException | LinkageError e) {
-                    key = null;
-                }
-                if (key == null || key.isBlank()) {
-                    key = "shape." + id.getNamespace() + "." + id.getPath();
-                }
-                out.add(new Entry(idString, key));
+        List<Entry> out = new ArrayList<>(shapes.size());
+        for (Object shape : shapes) {
+            if (shape == null) {
+                continue;
             }
-            List<Entry> result = List.copyOf(out);
-            cachedSignature = signature;
-            cached = result;
-            return result;
-        } catch (ClassCastException e) {
-            // 玩家装的是 Forgix 三平台合并包（onekeyminer-1.6.6-1.21.7.jar）时，
-            // OKM 返回的是 ChainShape_neoforge，和编译期的 ChainShape 不是同一个类。
-            if (!warnedMergedJar) {
-                warnedMergedJar = true;
-                OkmShapeSwitch.LOGGER.error(
-                        "[ShapeSwitch] 检测到 OneKeyMiner 三平台合并包，形状系统无法使用。"
-                                + "请改用 onekeyminer-neoforge-<版本>-<MC>.jar（GitHub Releases 里的 NeoForge 专用版）。");
+            String id = OkmBridge.shapeId(shape);
+            if (id.isBlank() || excluded.contains(id)) {
+                continue;
             }
-            return List.of();
-        } catch (RuntimeException | LinkageError e) {
-            return List.of();
+            String key = OkmBridge.shapeTranslationKey(shape);
+            if (key.isBlank()) {
+                key = "shape." + id.replace(':', '.');
+            }
+            out.add(new Entry(id, key));
         }
+
+        List<Entry> result = List.copyOf(out);
+        cachedSignature = signature;
+        cached = result;
+        return result;
     }
 
     /** 当前选中的形状 ID（读 OKM 配置）。 */
     public static String selectedShapeId() {
-        try {
-            String id = OneKeyMinerAPI.getSelectedShape();
-            return Objects.requireNonNullElse(id, "");
-        } catch (RuntimeException | LinkageError e) {
-            return "";
-        }
+        return OkmBridge.selectedShape();
     }
 
     /** 当前选中形状在列表中的下标；找不到时返回 -1。 */

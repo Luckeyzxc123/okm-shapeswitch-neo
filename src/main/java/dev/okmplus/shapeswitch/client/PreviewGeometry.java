@@ -5,28 +5,21 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.Util;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
-import org.xiyu.onekeyminer.api.OneKeyMinerAPI;
-import org.xiyu.onekeyminer.config.ConfigManager;
-import org.xiyu.onekeyminer.config.MinerConfig;
-import org.xiyu.onekeyminer.shape.ChainShape;
-import org.xiyu.onekeyminer.shape.ShapeContext;
 
 /**
  * 在客户端把“当前选中的形状 + 准星目标方块”算成一组预览坐标。
  *
- * <p>形状算法本身来自 OKM（{@link ChainShape#getPreviewPositions(ShapeContext)}），
- * 因此预览结果与实际连锁挖掘的形状一致，并且自定义形状同样支持
- * （不模拟工具限制与黑白名单）。</p>
+ * <p>形状算法本身由 OKM 提供（通过 {@link OkmBridge} 反射调用
+ * {@code getPreviewPositions}），因此预览结果与连锁挖掘一致，自定义形状同样支持。</p>
  */
 public final class PreviewGeometry {
 
@@ -37,7 +30,6 @@ public final class PreviewGeometry {
 
     private static final long CACHE_MILLIS = 100L;
 
-    /** 同一帧内多次调用时复用结果。 */
     private static String cacheKey = "";
     private static long cacheTime = Long.MIN_VALUE;
     private static Result cache = Result.EMPTY;
@@ -46,9 +38,6 @@ public final class PreviewGeometry {
     }
 
     public static Result current() {
-        if (!ShapeSwitchConfig.isReady()) {
-            return Result.EMPTY;
-        }
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) {
             return Result.EMPTY;
@@ -90,57 +79,31 @@ public final class PreviewGeometry {
             return Result.EMPTY;
         }
 
-        ChainShape shape = lookupShape(shapeId);
+        Object shape = OkmBridge.shapeById(shapeId);
         if (shape == null) {
             return Result.EMPTY;
         }
 
-        int cap = ShapeSwitchConfig.PREVIEW_MAX_BLOCKS.get();
+        int cap = ShapeSwitchConfig.previewMaxBlocks();
         int maxBlocks = 64;
         int maxDistance = 16;
         boolean allowDiagonal = true;
-        if (ShapeSwitchConfig.PREVIEW_MATCH_OKM_LIMITS.get()) {
-            Integer okmMaxBlocks = readOkmInt("maxBlocks");
-            if (okmMaxBlocks != null && okmMaxBlocks > 0) {
-                maxBlocks = okmMaxBlocks;
-            }
-            Integer okmMaxDistance = readOkmInt("maxDistance");
-            if (okmMaxDistance != null && okmMaxDistance > 0) {
-                maxDistance = okmMaxDistance;
-            }
-            Boolean okmDiagonal = readOkmAllowDiagonal();
-            if (okmDiagonal != null) {
-                allowDiagonal = okmDiagonal;
-            }
+        if (ShapeSwitchConfig.useOkmLimits()) {
+            maxBlocks = OkmBridge.configInt("maxBlocks", maxBlocks);
+            maxDistance = OkmBridge.configInt("maxDistance", maxDistance);
+            allowDiagonal = OkmBridge.configBool("allowDiagonal", allowDiagonal);
         }
         // 先限流再计算：否则大形状每 100ms 都可能遍历上万个方块。
         maxBlocks = Math.max(1, Math.min(maxBlocks, cap));
 
-        List<BlockPos> positions;
-        try {
-            ShapeContext context = new ShapeContext.Builder()
-                    .level(level)
-                    .originPos(origin)
-                    .originState(state)
-                    .playerFacing(player.getDirection())
-                    .playerLookingVertical(verticalDirection(player))
-                    .maxBlocks(maxBlocks)
-                    .maxDistance(maxDistance)
-                    .allowDiagonal(allowDiagonal)
-                    .blockMatcher((originState, target) -> target != null
-                            && !target.isAir()
-                            && target.getBlock() == originState.getBlock())
-                    .build();
-            positions = shape.getPreviewPositions(context);
-        } catch (RuntimeException | LinkageError e) {
-            return Result.EMPTY;
-        }
-        if (positions == null || positions.isEmpty()) {
+        List<BlockPos> positions = OkmBridge.previewPositions(shape, level, origin, state,
+                player.getDirection(), verticalDirection(player), maxBlocks, maxDistance, allowDiagonal);
+        if (positions.isEmpty()) {
             return new Result(origin, List.of());
         }
 
         Set<BlockPos> unique = new LinkedHashSet<>(Math.min(positions.size() + 1, cap));
-        if (ShapeSwitchConfig.PREVIEW_SHOW_ORIGIN.get()) {
+        if (ShapeSwitchConfig.previewShowOrigin()) {
             unique.add(origin.immutable());
         }
         for (BlockPos pos : positions) {
@@ -155,15 +118,6 @@ public final class PreviewGeometry {
         return new Result(origin, List.copyOf(new ArrayList<>(unique)));
     }
 
-    private static ChainShape lookupShape(String shapeId) {
-        try {
-            ResourceLocation id = ResourceLocation.tryParse(shapeId);
-            return id == null ? null : OneKeyMinerAPI.getShape(id);
-        } catch (RuntimeException | LinkageError e) {
-            return null;
-        }
-    }
-
     private static Direction verticalDirection(LocalPlayer player) {
         float pitch = player.getXRot();
         if (pitch < -45.0F) {
@@ -173,28 +127,5 @@ public final class PreviewGeometry {
             return Direction.DOWN;
         }
         return null;
-    }
-
-    // OKM 的配置字段在 1.6.x 各版本间保持一致，但这里仍然容错：
-    // 主模组换了实现或者配置还没加载时，预览退化成默认值即可。
-    private static Integer readOkmInt(String field) {
-        try {
-            MinerConfig config = ConfigManager.getConfig();
-            return switch (field) {
-                case "maxBlocks" -> config.maxBlocks;
-                case "maxDistance" -> config.maxDistance;
-                default -> null;
-            };
-        } catch (RuntimeException | LinkageError e) {
-            return null;
-        }
-    }
-
-    private static Boolean readOkmAllowDiagonal() {
-        try {
-            return ConfigManager.getConfig().allowDiagonal;
-        } catch (RuntimeException | LinkageError e) {
-            return null;
-        }
     }
 }

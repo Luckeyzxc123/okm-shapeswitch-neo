@@ -42,7 +42,7 @@ public final class ShapePreviewRenderer {
         if (event.isForTranslucentBlocks()) {
             return;
         }
-        if (!ShapeSwitchConfig.isReady() || !ShapeSwitchConfig.previewEnabled()) {
+        if (!ShapeSwitchConfig.previewEnabled()) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
@@ -58,7 +58,7 @@ public final class ShapePreviewRenderer {
             return;
         }
 
-        float alpha = ShapeSwitchConfig.PREVIEW_ALPHA.get() / 255.0F;
+        float alpha = ShapeSwitchConfig.previewAlpha() / 255.0F;
         if (alpha <= 0.0F) {
             return;
         }

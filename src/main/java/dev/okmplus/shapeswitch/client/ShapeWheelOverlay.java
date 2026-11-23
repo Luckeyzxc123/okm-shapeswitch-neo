@@ -9,10 +9,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.Util;
 
 /**
- * 形状轮盘 HUD：屏幕中央一圈小方块表示全部可轮换形状，中心显示当前形状名与序号。
- *
- * <p>只在“按住 Shift”或“刚切换完的一小段时间”内出现，不干扰正常游戏视野。
- * 全部用 {@code fill}/{@code drawString} 绘制，不操作 PoseStack，避免受 GUI 渲染管线版本差异影响。</p>
+ * 褰㈢姸杞洏 HUD锛氬睆骞曚腑澶竴鍦堝皬鏂瑰潡琛ㄧず鍏ㄩ儴鍙疆鎹㈠舰鐘讹紝涓績鏄剧ず褰撳墠褰㈢姸鍚嶄笌搴忓彿銆? *
+ * <p>鍙湪鈥滄寜浣?Shift鈥濇垨鈥滃垰鍒囨崲瀹岀殑涓€灏忔鏃堕棿鈥濆唴鍑虹幇锛屼笉骞叉壈姝ｅ父娓告垙瑙嗛噹銆? * 鍏ㄩ儴鐢?{@code fill}/{@code drawString} 缁樺埗锛屼笉鎿嶄綔 PoseStack锛岄伩鍏嶅彈 GUI 娓叉煋绠＄嚎鐗堟湰宸紓褰卞搷銆?/p>
  */
 public final class ShapeWheelOverlay {
 
@@ -23,9 +21,6 @@ public final class ShapeWheelOverlay {
     }
 
     public static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
-        if (!ShapeSwitchConfig.isReady()) {
-            return;
-        }
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null || mc.options.hideGui || mc.screen != null) {
             return;
@@ -45,7 +40,7 @@ public final class ShapeWheelOverlay {
         float alpha = fadeAlpha(now, mc);
 
         int centerX = graphics.guiWidth() / 2;
-        int centerY = graphics.guiHeight() / 2 + ShapeSwitchConfig.HUD_OFFSET_Y.get();
+        int centerY = graphics.guiHeight() / 2 + ShapeSwitchConfig.wheelOffsetY();
         String shapeName = entries.get(index).displayName().getString();
 
         drawRing(graphics, entries.size(), index, centerX, centerY, alpha);
@@ -56,7 +51,7 @@ public final class ShapeWheelOverlay {
         if (ShiftTracker.isShiftDown(mc)) {
             return 1.0F;
         }
-        long hold = ShapeSwitchConfig.WHEEL_HOLD_MS.get();
+        long hold = ShapeSwitchConfig.wheelHoldMillis();
         long elapsed = now - ShapeSwitcher.lastSwitchMillis();
         if (elapsed < 0L || elapsed >= hold) {
             return 0.0F;
@@ -69,9 +64,8 @@ public final class ShapeWheelOverlay {
     }
 
     /**
-     * 画环。形状数超过 {@link #MAX_RING_ITEMS} 时，环只显示包含当前项的一段窗口，
-     * 保证“选中点”始终存在于环上。
-     */
+     * 鐢荤幆銆傚舰鐘舵暟瓒呰繃 {@link #MAX_RING_ITEMS} 鏃讹紝鐜彧鏄剧ず鍖呭惈褰撳墠椤圭殑涓€娈电獥鍙ｏ紝
+     * 淇濊瘉鈥滈€変腑鐐光€濆缁堝瓨鍦ㄤ簬鐜笂銆?     */
     private static void drawRing(GuiGraphics graphics, int total, int selected, int centerX, int centerY, float alpha) {
         int count = Math.min(total, MAX_RING_ITEMS);
         if (count <= 0) {

@@ -9,8 +9,9 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 /**
  * 客户端配置。全部为 {@code ModConfig.Type.CLIENT}，不会同步到服务器。
  *
- * <p>所有读取入口都会先检查 {@link #isReady()}：配置文件语法错误 / 重载失败时
- * {@code ModConfigSpec} 的值会抛 {@code IllegalStateException}，直接读会让渲染线程崩掉。</p>
+ * <p>所有读取都经过 {@code safe*} 包装：配置文件缺失 / 语法错误 / 重载失败时
+ * {@code ModConfigSpec} 会抛异常，这里一律退化成默认值继续工作，
+ * 而不是让整个模组“静默失效”。</p>
  */
 public final class ShapeSwitchConfig {
 
@@ -54,9 +55,8 @@ public final class ShapeSwitchConfig {
     public static final ModConfigSpec.ConfigValue<String> PREVIEW_MODE = BUILDER
             .comment("挖掘形状预览的显示时机：always（始终）、shift（按住 Shift）、off（关闭）。",
                     "When to draw the mining-shape preview: always / shift / off.")
-            // 注意：这里不能用 defineInList —— NeoForge 21.8.54 在首次生成配置文件时
-            // 会用 null 调 ValueSpec#test，而 List.of(...) 的 contains(null) 会抛 NPE，
-            // 导致模组加载阶段直接崩溃。改为普通字符串 + 代码里归一化。
+            // 注意：不能用 defineInList —— NeoForge 21.8.54 首次生成配置时会用 null 调
+            // ValueSpec#test，而 List.of(...) 的 contains(null) 会抛 NPE 导致启动崩溃。
             .define("previewMode", "always");
 
     public static final ModConfigSpec.IntValue PREVIEW_MAX_BLOCKS = BUILDER
@@ -89,9 +89,59 @@ public final class ShapeSwitchConfig {
     private ShapeSwitchConfig() {
     }
 
-    /** 配置是否已经加载完成（未加载时读取任何值都会抛异常）。 */
+    /* ------------------------- 带默认值的安全读取 ------------------------- */
+
+    /** 配置是否已经加载完成（仅用于诊断日志，不再用来决定功能开关）。 */
     public static boolean isReady() {
-        return SPEC.isLoaded();
+        try {
+            return SPEC.isLoaded();
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    public static boolean enabled() {
+        return safeBool(ENABLED, true);
+    }
+
+    public static boolean requireShift() {
+        return safeBool(REQUIRE_SHIFT, true);
+    }
+
+    public static boolean invertScroll() {
+        return safeBool(INVERT_SCROLL, false);
+    }
+
+    public static boolean showWheel() {
+        return safeBool(SHOW_WHEEL, true);
+    }
+
+    public static int wheelHoldMillis() {
+        return safeInt(WHEEL_HOLD_MS, 1200);
+    }
+
+    public static int wheelOffsetY() {
+        return safeInt(HUD_OFFSET_Y, 0);
+    }
+
+    public static boolean showActionBar() {
+        return safeBool(SHOW_ACTION_BAR, true);
+    }
+
+    public static int previewMaxBlocks() {
+        return safeInt(PREVIEW_MAX_BLOCKS, 512);
+    }
+
+    public static int previewAlpha() {
+        return safeInt(PREVIEW_ALPHA, 150);
+    }
+
+    public static boolean previewShowOrigin() {
+        return safeBool(PREVIEW_SHOW_ORIGIN, true);
+    }
+
+    public static boolean useOkmLimits() {
+        return safeBool(PREVIEW_MATCH_OKM_LIMITS, true);
     }
 
     public static boolean previewModeAlways() {
@@ -108,15 +158,16 @@ public final class ShapeSwitchConfig {
     }
 
     public static String previewMode() {
-        if (!isReady()) {
+        String raw;
+        try {
+            raw = PREVIEW_MODE.get();
+        } catch (RuntimeException e) {
             return "always";
         }
-        String raw = PREVIEW_MODE.get();
         if (raw == null) {
             return "always";
         }
         String mode = raw.trim().toLowerCase(Locale.ROOT);
-        // 容忍拼错：只认这三个值，其余按 always 处理。
         return switch (mode) {
             case "shift", "off", "always" -> mode;
             default -> "always";
@@ -124,10 +175,12 @@ public final class ShapeSwitchConfig {
     }
 
     public static Set<String> excludedShapeIds() {
-        if (!isReady()) {
+        String raw;
+        try {
+            raw = EXCLUDED_SHAPES.get();
+        } catch (RuntimeException e) {
             return Set.of();
         }
-        String raw = EXCLUDED_SHAPES.get();
         if (raw == null || raw.isBlank()) {
             return Set.of();
         }
@@ -139,5 +192,23 @@ public final class ShapeSwitchConfig {
             }
         }
         return ids;
+    }
+
+    private static boolean safeBool(ModConfigSpec.BooleanValue value, boolean fallback) {
+        try {
+            Boolean v = value.get();
+            return v == null ? fallback : v;
+        } catch (RuntimeException e) {
+            return fallback;
+        }
+    }
+
+    private static int safeInt(ModConfigSpec.IntValue value, int fallback) {
+        try {
+            Integer v = value.get();
+            return v == null ? fallback : v;
+        } catch (RuntimeException e) {
+            return fallback;
+        }
     }
 }

@@ -12,18 +12,25 @@ import net.neoforged.neoforge.client.event.InputEvent;
  */
 public final class ShapeScrollHandler {
 
+    private static boolean loggedFirstEvent;
+
     private ShapeScrollHandler() {
     }
 
     public static void onScroll(InputEvent.MouseScrollingEvent event) {
-        if (!ShapeSwitchConfig.isReady() || !ShapeSwitchConfig.ENABLED.get()) {
+        if (!ShapeSwitchConfig.enabled()) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null || mc.screen != null) {
             return;
         }
-        if (ShapeSwitchConfig.REQUIRE_SHIFT.get() && !ShiftTracker.isShiftDown(mc)) {
+        if (!loggedFirstEvent) {
+            loggedFirstEvent = true;
+            OkmShapeSwitch.LOGGER.info("[ShapeSwitch] 已收到滚轮事件（shiftDown={}，形状数={}）",
+                    ShiftTracker.isShiftDown(mc), ShapeCatalog.entries().size());
+        }
+        if (ShapeSwitchConfig.requireShift() && !ShiftTracker.isShiftDown(mc)) {
             return;
         }
 
