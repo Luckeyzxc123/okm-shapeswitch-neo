@@ -9,8 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -23,27 +22,26 @@ jobs:
         with:
           gradle-version: '8.14'
 
-      - name: Fetch OneKeyMiner (1.21.8)
+      # 必须用 NeoForge 专用 jar；Modrinth 那个是 Forgix 合并包，类名带 _neoforge 后缀
+      - name: Fetch OneKeyMiner (NeoForge)
         run: |
           mkdir -p libs
-          for loader in neoforge fabric forge; do
-            curl -s "https://api.modrinth.com/v2/project/onekeyminer_nf/version?game_versions=%5B%221.21.8%22%5D&loaders=%5B%22${loader}%22%5D" -o /tmp/okm.json
-            URL=$(jq -r 'if type == "array" then (.[0].files[0].url // empty) else empty end' /tmp/okm.json)
-            if [ -n "$URL" ]; then
-              echo "OKM ($loader): $URL"
-              curl -L --fail -o libs/onekeyminer.jar "$URL"
-              break
-            fi
-          done
-          test -f libs/onekeyminer.jar || { echo "::error::没取到 OKM 1.21.8 jar"; exit 1; }
+          URL="https://github.com/Mai-xiyu/OneKeyMiner/releases/download/1.21.7-1.6.6/onekeyminer-neoforge-1.6.6-1.21.7.jar"
+          echo "下载: $URL"
+          curl -L --fail --retry 3 -o libs/onekeyminer.jar "$URL"
           ls -l libs
 
+          echo "--- 校验 jar ---"
+          unzip -l libs/onekeyminer.jar | grep -q "org/xiyu/onekeyminer/api/OneKeyMinerAPI.class" \
+            || { echo "::error::jar 里没有 OneKeyMinerAPI.class"; exit 1; }
+          if unzip -l libs/onekeyminer.jar | grep -q "_neoforge\.class"; then
+            echo "::error::这是 Forgix 合并包（类名带 _neoforge 后缀），请改用 onekeyminer-neoforge-*.jar"
+            exit 1
+          fi
+          echo "OK: NeoForge 专用 OKM jar"
+
       - name: Build
-        run: |
-          gradle build --no-daemon --stacktrace || {
-            echo "::warning::21.8.54 失败，改用 21.8.57"
-            gradle build --no-daemon --stacktrace -Pneo_version=21.8.57
-          }
+        run: gradle build --no-daemon --stacktrace
 
       - name: Upload jar
         uses: actions/upload-artifact@v4
