@@ -1,7 +1,6 @@
 package dev.okmplus.shapeswitch.client;
 
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -55,7 +54,10 @@ public final class ShapeSwitchConfig {
     public static final ModConfigSpec.ConfigValue<String> PREVIEW_MODE = BUILDER
             .comment("挖掘形状预览的显示时机：always（始终）、shift（按住 Shift）、off（关闭）。",
                     "When to draw the mining-shape preview: always / shift / off.")
-            .defineInList("previewMode", "always", List.of("always", "shift", "off"));
+            // 注意：这里不能用 defineInList —— NeoForge 21.8.54 在首次生成配置文件时
+            // 会用 null 调 ValueSpec#test，而 List.of(...) 的 contains(null) 会抛 NPE，
+            // 导致模组加载阶段直接崩溃。改为普通字符串 + 代码里归一化。
+            .define("previewMode", "always");
 
     public static final ModConfigSpec.IntValue PREVIEW_MAX_BLOCKS = BUILDER
             .comment("预览最多计算/渲染多少个方块（防止大形状卡顿）。",
@@ -110,7 +112,15 @@ public final class ShapeSwitchConfig {
             return "always";
         }
         String raw = PREVIEW_MODE.get();
-        return raw == null ? "always" : raw.trim().toLowerCase(Locale.ROOT);
+        if (raw == null) {
+            return "always";
+        }
+        String mode = raw.trim().toLowerCase(Locale.ROOT);
+        // 容忍拼错：只认这三个值，其余按 always 处理。
+        return switch (mode) {
+            case "shift", "off", "always" -> mode;
+            default -> "always";
+        };
     }
 
     public static Set<String> excludedShapeIds() {

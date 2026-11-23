@@ -78,7 +78,9 @@ okmshapeswitch-1.21.8-1.0.0.jar
 
 1. `%APPDATA%\.minecraft\mods\`（或你的启动器实例的 `mods` 文件夹）里放入：
    - `okmshapeswitch-1.21.8-1.0.0.jar`
-   - OneKeyMiner(Neo)Forge **1.6.x**（1.21.8 版）
+   - `onekeyminer-neoforge-1.6.6-1.21.7.jar`（NeoForge 专用版，来自
+     [GitHub Releases](https://github.com/Mai-xiyu/OneKeyMiner/releases/tag/1.21.7-1.6.6)；
+     **不要**用 Modrinth 的三平台合并包 `onekeyminer-1.6.6-1.21.7.jar`）
 2. 启动 Minecraft 1.21.8 + NeoForge 21.8.54
 3. 进世界后：准星指向方块看预览；**按住 Shift 滚动滚轮**切换形状
 
@@ -91,7 +93,7 @@ okmshapeswitch-1.21.8-1.0.0.jar
 | 日志关键字 | 原因 | 处理 |
 | --- | --- | --- |
 | `Could not find net.neoforged:neoforge:21.8.54` | 该补丁号在 Maven 上不存在 | 工作流已自动用 `21.8.57` 重试；也可把 `gradle.properties` 的 `neo_version` 直接改成 `21.8.57` |
-| `libs/ 里没有 OneKeyMiner...` | 没拿到 OKM jar | 检查 `Fetch OneKeyMiner` 那一步日志；必要时手动下载 OKM 的 1.21.8 jar，改名为 `libs/onekeyminer.jar` 一起提交 |
+| `ChainShape_neoforge cannot be converted to ChainShape` | `libs/` 放的是 Forgix 三平台合并包 | 换成 `onekeyminer-neoforge-1.6.6-1.21.7.jar`（工作流已自动下载并校验） |
 | `Could not resolve org.gradle.toolchains.foojay-resolver-convention` | 网络/仓库波动 | 重新运行（`Re-run all jobs`） |
 | `compileJava` 里出现 `org.xiyu.onekeyminer...` 找不到 | `libs/` 里放的是 1.5.x 旧版 OKM | 换 1.6.x |
 | 一切正常但 `Artifacts` 是空的 | 上传步骤失败 | 看 `Upload jar` 步骤；确认 `build/libs/*.jar` 有产物 |

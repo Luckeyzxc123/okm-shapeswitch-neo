@@ -25,7 +25,10 @@
 ## 安装
 
 1. 安装 Minecraft 1.21.8 + NeoForge 21.8.54。
-2. 把 **OneKeyMiner(Neo)Forge 1.6.x** 放进 `mods/`。
+2. 把 **OneKeyMiner 的 NeoForge 专用 jar** 放进 `mods/`：
+   [`onekeyminer-neoforge-1.6.6-1.21.7.jar`](https://github.com/Mai-xiyu/OneKeyMiner/releases/download/1.21.7-1.6.6/onekeyminer-neoforge-1.6.6-1.21.7.jar)
+   （来自 [GitHub Releases](https://github.com/Mai-xiyu/OneKeyMiner/releases/tag/1.21.7-1.6.6)，它的 minecraft 依赖范围是 `[1.21.7,)`，1.21.8 可用）
+   > ⚠️ **不要**用 Modrinth 上的 `onekeyminer-1.6.6-1.21.7.jar`：那是 Forgix 三平台合并包，类名被改成 `ChainShape_neoforge` 之类，第三方附属无法链接。
 3. 把本模组的 jar 放进 `mods/`。
 4. 进游戏后按住 **Shift 滚动滚轮** 切换；准星对着方块就能看到预览。
 
@@ -75,9 +78,9 @@
 ### 步骤
 
 ```bash
-# 1. 把 OneKeyMiner 的 NeoForge jar 放进 libs/（必须；OKM 没有发布 Maven 坐标）
-#    https://modrinth.com/mod/onekeyminer_nf/versions?g=1.21.8
-#    https://github.com/Mai-xiyu/OneKeyMiner/releases   （1.6.0 及以上）
+# 1. 把 OneKeyMiner 的 NeoForge 专用 jar 放进 libs/（必须；OKM 没有发布 Maven 坐标）
+#    https://github.com/Mai-xiyu/OneKeyMiner/releases/tag/1.21.7-1.6.6
+#    -> onekeyminer-neoforge-1.6.6-1.21.7.jar   （不要用 Modrinth 的合并包）
 
 # 2. 生成 Gradle Wrapper（仓库里没有内置 gradle-wrapper.jar）
 gradle wrapper --gradle-version 8.14
@@ -123,6 +126,14 @@ src/main/java/dev/okmplus/shapeswitch/
 - 预览只画**当前准星选中方块**对应的形状，不会预测“挖掉这一块之后下一块会连到哪”。
 - 只响应垂直滚动（`getScrollDeltaY`）；横向滚动不切换，避免误触。
 - 若 OKM 未来改动 `setSelectedShape` 语义，需要重新编译适配。
+
+## 排错
+
+| 现象 | 原因 / 处理 |
+| --- | --- |
+| 启动即崩，栈里有 `ModConfigSpec$ValueSpec.test` + `ImmutableCollections$ListN.indexOf` | **1.0.0 的 bug**（`defineInList` 在首次生成配置时遇到 `null` 抛 NPE），1.0.1 已修 |
+| 日志里 `检测到 OneKeyMiner 三平台合并包` | 装了 Modrinth 的 `onekeyminer-<版本>-<MC>.jar`，请换成 GitHub Releases 的 `onekeyminer-neoforge-*.jar` |
+| `mods/` 里两个 OKM jar | 只能留一个，否则 mod id 冲突 |
 
 ## 许可
 
