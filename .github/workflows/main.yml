@@ -22,23 +22,41 @@ jobs:
         with:
           gradle-version: '8.14'
 
-      # 必须用 NeoForge 专用 jar；Modrinth 那个是 Forgix 合并包，类名带 _neoforge 后缀
-      - name: Fetch OneKeyMiner (NeoForge)
+      # OKM 有多种 jar 变体（平台专用 / -dev / Forgix 合并包），类名可能带 _neoforge 后缀。
+      # 依次尝试，谁能让 compileJava 通过就用谁。
+      - name: Pick a usable OneKeyMiner jar
         run: |
+          set -u
+          BASE="https://github.com/Mai-xiyu/OneKeyMiner/releases/download/1.21.7-1.6.6"
           mkdir -p libs
-          URL="https://github.com/Mai-xiyu/OneKeyMiner/releases/download/1.21.7-1.6.6/onekeyminer-neoforge-1.6.6-1.21.7.jar"
-          echo "下载: $URL"
-          curl -L --fail --retry 3 -o libs/onekeyminer.jar "$URL"
-          ls -l libs
 
-          echo "--- 校验 jar ---"
-          unzip -l libs/onekeyminer.jar | grep -q "org/xiyu/onekeyminer/api/OneKeyMinerAPI.class" \
-            || { echo "::error::jar 里没有 OneKeyMinerAPI.class"; exit 1; }
-          if unzip -l libs/onekeyminer.jar | grep -q "_neoforge\.class"; then
-            echo "::error::这是 Forgix 合并包（类名带 _neoforge 后缀），请改用 onekeyminer-neoforge-*.jar"
-            exit 1
-          fi
-          echo "OK: NeoForge 专用 OKM jar"
+          try_jar() {
+            local name="$1" url="$2"
+            echo "::group::尝试 OKM jar: $name"
+            if ! curl -L --fail --retry 3 -sS -o libs/onekeyminer.jar "$url"; then
+              echo "❌ 下载失败: $url"; echo "::endgroup::"; return 1
+            fi
+            if ! unzip -l libs/onekeyminer.jar | grep -q "org/xiyu/onekeyminer/api/OneKeyMinerAPI.class"; then
+              echo "❌ 没有 OneKeyMinerAPI.class，跳过"; echo "::endgroup::"; return 1
+            fi
+            echo "--- org/xiyu/onekeyminer/shape/ 内容 ---"
+            unzip -l libs/onekeyminer.jar | grep "onekeyminer/shape/" | head -20 || true
+            echo "--- 试编译 ---"
+            if gradle compileJava --no-daemon -q > /tmp/compile.log 2>&1; then
+              echo "✅ 可用: $name"; echo "$name" > /tmp/okm_variant.txt
+              echo "::endgroup::"; return 0
+            fi
+            echo "❌ 编译失败，前几条错误："
+            grep -m 5 "error:" /tmp/compile.log || tail -n 25 /tmp/compile.log
+            echo "::endgroup::"; return 1
+          }
+
+          try_jar "neoforge"        "$BASE/onekeyminer-neoforge-1.6.6-1.21.7.jar" \
+          || try_jar "neoforge-dev" "$BASE/onekeyminer-neoforge-1.6.6-1.21.7-dev.jar" \
+          || try_jar "universal"    "$BASE/onekeyminer-1.6.6-1.21.7.jar" \
+          || { echo "::error::三份 OKM jar 都编译不过，请看上面各组的 error"; exit 1; }
+
+          echo "最终使用的 OKM jar: $(cat /tmp/okm_variant.txt)"
 
       - name: Build
         run: gradle build --no-daemon --stacktrace
