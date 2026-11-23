@@ -1,0 +1,53 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle 8.14
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14'
+
+      - name: Fetch OneKeyMiner (1.21.8)
+        run: |
+          mkdir -p libs
+          for loader in neoforge fabric forge; do
+            curl -s "https://api.modrinth.com/v2/project/onekeyminer_nf/version?game_versions=%5B%221.21.8%22%5D&loaders=%5B%22${loader}%22%5D" -o /tmp/okm.json
+            URL=$(jq -r 'if type == "array" then (.[0].files[0].url // empty) else empty end' /tmp/okm.json)
+            if [ -n "$URL" ]; then
+              echo "OKM ($loader): $URL"
+              curl -L --fail -o libs/onekeyminer.jar "$URL"
+              break
+            fi
+          done
+          test -f libs/onekeyminer.jar || { echo "::error::没取到 OKM 1.21.8 jar"; exit 1; }
+          ls -l libs
+
+      - name: Build
+        run: |
+          gradle build --no-daemon --stacktrace || {
+            echo "::warning::21.8.54 失败，改用 21.8.57"
+            gradle build --no-daemon --stacktrace -Pneo_version=21.8.57
+          }
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: okmshapeswitch-jar
+          path: build/libs/*.jar
+          if-no-files-found: error
