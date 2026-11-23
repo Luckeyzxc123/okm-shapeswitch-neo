@@ -6,7 +6,7 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 
 /**
  * 形状轮盘 HUD：屏幕中央一圈小方块表示全部可轮换形状，中心显示当前形状名与序号。
