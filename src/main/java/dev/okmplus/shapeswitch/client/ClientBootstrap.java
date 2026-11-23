@@ -31,10 +31,12 @@ public final class ClientBootstrap {
 
         modBus.addListener(ClientBootstrap::onRegisterGuiLayers);
         modBus.addListener(ClientBootstrap::onConfigEvent);
+        modBus.addListener(ShapeSwitchKeys::register);
 
         NeoForge.EVENT_BUS.addListener(ShapeScrollHandler::onScroll);
         NeoForge.EVENT_BUS.addListener(ShapePreviewRenderer::onRenderHighlight);
         NeoForge.EVENT_BUS.addListener(ShapeSwitchDiagnostics::onClientTick);
+        NeoForge.EVENT_BUS.addListener(PreviewToggle::onClientTick);
 
         // 模组列表里的“配置”按钮 -> NeoForge 通用配置界面。
         container.registerExtensionPoint(IConfigScreenFactory.class,

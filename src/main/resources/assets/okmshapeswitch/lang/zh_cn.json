@@ -1,6 +1,13 @@
 {
   "okmshapeswitch.wheel.hint": "Shift + 滚轮 切换形状",
+  "okmshapeswitch.wheel.size": "%s × %s × %s · %s 块",
+  "okmshapeswitch.wheel.size_unknown": "未对准方块",
   "okmshapeswitch.actionbar.switched": "形状：%s（%s/%s）",
+
+  "key.categories.okmshapeswitch": "一键连锁形状切换+",
+  "key.okmshapeswitch.toggle_preview": "开关形状预览",
+  "okmshapeswitch.message.preview_on": "形状预览：开",
+  "okmshapeswitch.message.preview_off": "形状预览：关",
 
   "okmshapeswitch.configuration.title": "一键连锁形状切换+ 设置",
   "okmshapeswitch.configuration.section.okm.shapeswitch.client.toml": "客户端设置",

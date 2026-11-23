@@ -118,6 +118,40 @@ public final class PreviewGeometry {
         return new Result(origin, List.copyOf(new ArrayList<>(unique)));
     }
 
+    /** 预览的包围盒尺寸（单位：方块），用于轮盘上显示“几×几×几”。 */
+    public record Size(int x, int y, int z, int count) {
+    }
+
+    /**
+     * 当前预览的尺寸摘要；没有目标方块或预览为空时返回 {@code null}。
+     *
+     * <p>复用 {@link #current()} 的缓存，因此可以每帧调用。</p>
+     */
+    public static Size lastSize() {
+        Result result = current();
+        if (result == null || result.blocks().isEmpty()) {
+            return null;
+        }
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int minZ = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        int maxZ = Integer.MIN_VALUE;
+        for (BlockPos pos : result.blocks()) {
+            minX = Math.min(minX, pos.getX());
+            minY = Math.min(minY, pos.getY());
+            minZ = Math.min(minZ, pos.getZ());
+            maxX = Math.max(maxX, pos.getX());
+            maxY = Math.max(maxY, pos.getY());
+            maxZ = Math.max(maxZ, pos.getZ());
+        }
+        if (minX > maxX) {
+            return null;
+        }
+        return new Size(maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1, result.blocks().size());
+    }
+
     private static Direction verticalDirection(LocalPlayer player) {
         float pitch = player.getXRot();
         if (pitch < -45.0F) {

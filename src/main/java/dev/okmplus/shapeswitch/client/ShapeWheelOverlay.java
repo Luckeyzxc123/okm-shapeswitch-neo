@@ -2,15 +2,18 @@ package dev.okmplus.shapeswitch.client;
 
 import java.util.List;
 
+import net.minecraft.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.Util;
 
 /**
- * 褰㈢姸杞洏 HUD锛氬睆骞曚腑澶竴鍦堝皬鏂瑰潡琛ㄧず鍏ㄩ儴鍙疆鎹㈠舰鐘讹紝涓績鏄剧ず褰撳墠褰㈢姸鍚嶄笌搴忓彿銆? *
- * <p>鍙湪鈥滄寜浣?Shift鈥濇垨鈥滃垰鍒囨崲瀹岀殑涓€灏忔鏃堕棿鈥濆唴鍑虹幇锛屼笉骞叉壈姝ｅ父娓告垙瑙嗛噹銆? * 鍏ㄩ儴鐢?{@code fill}/{@code drawString} 缁樺埗锛屼笉鎿嶄綔 PoseStack锛岄伩鍏嶅彈 GUI 娓叉煋绠＄嚎鐗堟湰宸紓褰卞搷銆?/p>
+ * 形状轮盘 HUD：屏幕中央一圈小方块表示全部可轮换形状，中心显示当前形状名、
+ * 序号以及该形状的尺寸（几×几×几、共多少块）。
+ *
+ * <p>只在“按住 Shift”或“刚切换完的一小段时间”内出现，不干扰正常游戏视野。
+ * 全部用 {@code fill}/{@code drawString} 绘制，不操作 PoseStack。</p>
  */
 public final class ShapeWheelOverlay {
 
@@ -22,9 +25,6 @@ public final class ShapeWheelOverlay {
 
     public static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null || mc.options.hideGui || mc.screen != null) {
-            return;
-        }
 
         long now = Util.getMillis();
         if (!ShapeSwitcher.wheelVisible(now)) {
@@ -42,9 +42,19 @@ public final class ShapeWheelOverlay {
         int centerX = graphics.guiWidth() / 2;
         int centerY = graphics.guiHeight() / 2 + ShapeSwitchConfig.wheelOffsetY();
         String shapeName = entries.get(index).displayName().getString();
+        String sizeText = sizeText();
 
         drawRing(graphics, entries.size(), index, centerX, centerY, alpha);
-        drawCenter(graphics, mc, shapeName, index + 1, entries.size(), centerX, centerY, alpha);
+        drawCenter(graphics, mc, shapeName, sizeText, index + 1, entries.size(), centerX, centerY, alpha);
+    }
+
+    private static String sizeText() {
+        PreviewGeometry.Size size = PreviewGeometry.lastSize();
+        if (size == null) {
+            return Component.translatable("okmshapeswitch.wheel.size_unknown").getString();
+        }
+        return Component.translatable("okmshapeswitch.wheel.size",
+                size.x(), size.y(), size.z(), size.count()).getString();
     }
 
     private static float fadeAlpha(long now, Minecraft mc) {
@@ -64,8 +74,9 @@ public final class ShapeWheelOverlay {
     }
 
     /**
-     * 鐢荤幆銆傚舰鐘舵暟瓒呰繃 {@link #MAX_RING_ITEMS} 鏃讹紝鐜彧鏄剧ず鍖呭惈褰撳墠椤圭殑涓€娈电獥鍙ｏ紝
-     * 淇濊瘉鈥滈€変腑鐐光€濆缁堝瓨鍦ㄤ簬鐜笂銆?     */
+     * 画环。形状数超过 {@link #MAX_RING_ITEMS} 时，环只显示包含当前项的一段窗口，
+     * 保证“选中点”始终存在于环上。
+     */
     private static void drawRing(GuiGraphics graphics, int total, int selected, int centerX, int centerY, float alpha) {
         int count = Math.min(total, MAX_RING_ITEMS);
         if (count <= 0) {
@@ -93,26 +104,29 @@ public final class ShapeWheelOverlay {
         }
     }
 
-    private static void drawCenter(GuiGraphics graphics, Minecraft mc, String shapeName, int number, int total,
-            int centerX, int centerY, float alpha) {
+    private static void drawCenter(GuiGraphics graphics, Minecraft mc, String shapeName, String sizeText,
+            int number, int total, int centerX, int centerY, float alpha) {
         var font = mc.font;
         int nameColor = argb(alpha, 0xFFFFFFFF);
         int infoColor = argb(alpha * 0.85F, 0xFFB9D4E8);
+        int sizeColor = argb(alpha, 0xFF9EE8FF);
         int hintColor = argb(alpha * 0.6F, 0xFF8FA6B8);
 
-        int panelWidth = Math.max(font.width(shapeName), 84) + 12;
-        graphics.fill(centerX - panelWidth / 2, centerY - 11, centerX + panelWidth / 2, centerY + 11,
-                argb(alpha * 0.55F, 0x0B1118));
-        graphics.drawCenteredString(font, shapeName, centerX, centerY - 9, nameColor);
-
         String info = number + " / " + total;
-        graphics.drawCenteredString(font, info, centerX, centerY + 2, infoColor);
+        int contentWidth = Math.max(Math.max(font.width(shapeName), font.width(sizeText)), font.width(info));
+        int panelWidth = Math.max(contentWidth, 96) + 14;
+        graphics.fill(centerX - panelWidth / 2, centerY - 22, centerX + panelWidth / 2, centerY + 14,
+                argb(alpha * 0.55F, 0x0B1118));
+
+        graphics.drawCenteredString(font, shapeName, centerX, centerY - 20, nameColor);
+        graphics.drawCenteredString(font, sizeText, centerX, centerY - 8, sizeColor);
+        graphics.drawCenteredString(font, info, centerX, centerY + 3, infoColor);
 
         String hint = Component.translatable("okmshapeswitch.wheel.hint").getString();
         int hintWidth = font.width(hint);
-        graphics.fill(centerX - hintWidth / 2 - 3, centerY + 26, centerX + hintWidth / 2 + 3, centerY + 38,
+        graphics.fill(centerX - hintWidth / 2 - 3, centerY + 30, centerX + hintWidth / 2 + 3, centerY + 42,
                 argb(alpha * 0.5F, 0x0B1118));
-        graphics.drawCenteredString(font, hint, centerX, centerY + 28, hintColor);
+        graphics.drawCenteredString(font, hint, centerX, centerY + 32, hintColor);
     }
 
     private static int argb(float alpha, int rgb) {

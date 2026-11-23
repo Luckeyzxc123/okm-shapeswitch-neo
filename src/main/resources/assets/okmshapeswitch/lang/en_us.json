@@ -1,6 +1,13 @@
 {
   "okmshapeswitch.wheel.hint": "Shift + Scroll to switch shape",
+  "okmshapeswitch.wheel.size": "%s × %s × %s · %s blocks",
+  "okmshapeswitch.wheel.size_unknown": "no target",
   "okmshapeswitch.actionbar.switched": "Shape: %s (%s/%s)",
+
+  "key.categories.okmshapeswitch": "OneKeyMiner ShapeSwitch Plus",
+  "key.okmshapeswitch.toggle_preview": "Toggle shape preview",
+  "okmshapeswitch.message.preview_on": "Shape preview: ON",
+  "okmshapeswitch.message.preview_off": "Shape preview: OFF",
 
   "okmshapeswitch.configuration.title": "ShapeSwitch Plus Settings",
   "okmshapeswitch.configuration.section.okm.shapeswitch.client.toml": "Client settings",
