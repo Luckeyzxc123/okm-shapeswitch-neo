@@ -1,0 +1,98 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+version = project.mod_version
+group = project.mod_group_id
+
+base {
+    archivesName = "${project.mod_id}-${project.minecraft_version}"
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+
+    mods {
+        "${project.mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+// ModDevGradle 会自动加入 NeoForged / Mojang 仓库，这里不需要额外 repositories。
+
+dependencies {
+    // OKM（OneKeyMiner）不发布 Maven 坐标，按官方说明把对应平台的 jar 放进 libs/。
+    // compileOnly：编译需要；runtimeOnly：让 runClient 里也能真正加载 OKM 方便调试。
+    // 两者都不会被打进本模组的 jar，玩家仍需自行安装 OKM。
+    def okmJars = fileTree(dir: 'libs', include: ['*.jar'])
+    compileOnly okmJars
+    runtimeOnly okmJars
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+
+tasks.named('processResources', ProcessResources) {
+    def props = [version: project.version]
+    inputs.properties props
+    filteringCharset = 'UTF-8'
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand props
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+            'Specification-Title'   : project.mod_id,
+            'Specification-Vendor'  : project.mod_authors,
+            'Specification-Version' : '1',
+            'Implementation-Title'  : project.mod_name,
+            'Implementation-Version': project.version,
+            'Implementation-Vendor' : project.mod_authors
+        ])
+    }
+}
+
+// libs/ 里没有 OKM jar 时直接失败，而不是吐一串 “package org.xiyu.onekeyminer does not exist”。
+tasks.register('checkOkmJar') {
+    def jars = fileTree(dir: 'libs', include: ['*.jar'])
+    inputs.files(jars)
+    doFirst {
+        if (jars.files.isEmpty()) {
+            throw new GradleException("""
+                    libs/ 里没有 OneKeyMiner(Neo)Forge 的 jar，编译无法继续。
+                    请把 1.21.8 可用的 OKM NeoForge jar（1.6.x）复制到：
+                      ${file('libs').absolutePath}
+                    下载：https://modrinth.com/mod/onekeyminer_nf/versions?g=1.21.8
+                    """.stripIndent())
+        }
+        logger.lifecycle('OKM 依赖: ' + jars.files.collect { it.name }.join(', '))
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn 'checkOkmJar'
+}

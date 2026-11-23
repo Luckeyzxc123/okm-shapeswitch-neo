@@ -1,0 +1,35 @@
+{
+  "okmshapeswitch.wheel.hint": "Shift + Scroll to switch shape",
+  "okmshapeswitch.actionbar.switched": "Shape: %s (%s/%s)",
+
+  "okmshapeswitch.configuration.title": "ShapeSwitch Plus Settings",
+  "okmshapeswitch.configuration.section.okm.shapeswitch.client.toml": "Client settings",
+  "okmshapeswitch.configuration.section.okm.shapeswitch.client.toml.title": "ShapeSwitch Plus client settings",
+
+  "okmshapeswitch.configuration.enabled": "Enable shape switching",
+  "okmshapeswitch.configuration.requireShift": "Require Shift",
+  "okmshapeswitch.configuration.invertScroll": "Invert scroll direction",
+  "okmshapeswitch.configuration.showWheel": "Show shape wheel",
+  "okmshapeswitch.configuration.wheelHoldMillis": "Wheel hold time (ms)",
+  "okmshapeswitch.configuration.wheelOffsetY": "Wheel vertical offset",
+  "okmshapeswitch.configuration.showActionBar": "Show action bar message",
+  "okmshapeswitch.configuration.previewMode": "Preview mode",
+  "okmshapeswitch.configuration.previewMaxBlocks": "Preview max blocks",
+  "okmshapeswitch.configuration.previewAlpha": "Preview alpha",
+  "okmshapeswitch.configuration.previewShowOrigin": "Highlight origin block",
+  "okmshapeswitch.configuration.previewUseOkmLimits": "Use OneKeyMiner limits",
+  "okmshapeswitch.configuration.excludedShapes": "Excluded shapes",
+
+  "okmshapeswitch.configuration.requireshift": "Require Shift",
+  "okmshapeswitch.configuration.invertscroll": "Invert scroll direction",
+  "okmshapeswitch.configuration.showwheel": "Show shape wheel",
+  "okmshapeswitch.configuration.wheelholdmillis": "Wheel hold time (ms)",
+  "okmshapeswitch.configuration.wheeloffsety": "Wheel vertical offset",
+  "okmshapeswitch.configuration.showactionbar": "Show action bar message",
+  "okmshapeswitch.configuration.previewmode": "Preview mode",
+  "okmshapeswitch.configuration.previewmaxblocks": "Preview max blocks",
+  "okmshapeswitch.configuration.previewalpha": "Preview alpha",
+  "okmshapeswitch.configuration.previewshoworigin": "Highlight origin block",
+  "okmshapeswitch.configuration.previewuseokmlimits": "Use OneKeyMiner limits",
+  "okmshapeswitch.configuration.excludedshapes": "Excluded shapes"
+}

@@ -1,0 +1,41 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "okmshapeswitch"
+version = "${version}"
+displayName = "[OKM附属] 一键连锁形状切换+ (Neo)"
+authors = "okmplus"
+logoFile = "icon.png"
+description = '''
+[OKMNF] 一键连锁(Neo)Forge 的附属模组。
+
+- Shift + 鼠标滚轮：循环切换挖掘形状
+- 准星所指方块上实时预览当前形状会挖掉的方块
+- 切换时显示形状轮盘与当前形状名称
+- 全部功能可在 config/okm-shapeswitch-client.toml 中调整
+
+需要同时安装 OneKeyMiner(Neo)Forge（1.6.x，1.21.8 可用版本）。
+'''
+
+[[dependencies.okmshapeswitch]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.8.0,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.okmshapeswitch]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.8,1.21.9)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.okmshapeswitch]]
+modId = "onekeyminer"
+type = "required"
+versionRange = "[1.6.0,)"
+ordering = "NONE"
+side = "CLIENT"

@@ -1,0 +1,35 @@
+{
+  "okmshapeswitch.wheel.hint": "Shift + 滚轮 切换形状",
+  "okmshapeswitch.actionbar.switched": "形状：%s（%s/%s）",
+
+  "okmshapeswitch.configuration.title": "一键连锁形状切换+ 设置",
+  "okmshapeswitch.configuration.section.okm.shapeswitch.client.toml": "客户端设置",
+  "okmshapeswitch.configuration.section.okm.shapeswitch.client.toml.title": "一键连锁形状切换+ 客户端设置",
+
+  "okmshapeswitch.configuration.enabled": "启用形状切换",
+  "okmshapeswitch.configuration.requireShift": "需要按住 Shift",
+  "okmshapeswitch.configuration.invertScroll": "反转滚轮方向",
+  "okmshapeswitch.configuration.showWheel": "显示形状轮盘",
+  "okmshapeswitch.configuration.wheelHoldMillis": "轮盘保留时长（毫秒）",
+  "okmshapeswitch.configuration.wheelOffsetY": "轮盘垂直偏移",
+  "okmshapeswitch.configuration.showActionBar": "物品栏上方提示",
+  "okmshapeswitch.configuration.previewMode": "预览显示时机",
+  "okmshapeswitch.configuration.previewMaxBlocks": "预览最大方块数",
+  "okmshapeswitch.configuration.previewAlpha": "预览不透明度",
+  "okmshapeswitch.configuration.previewShowOrigin": "高亮准星原方块",
+  "okmshapeswitch.configuration.previewUseOkmLimits": "使用一键连锁的限制值",
+  "okmshapeswitch.configuration.excludedShapes": "排除的形状",
+
+  "okmshapeswitch.configuration.requireshift": "需要按住 Shift",
+  "okmshapeswitch.configuration.invertscroll": "反转滚轮方向",
+  "okmshapeswitch.configuration.showwheel": "显示形状轮盘",
+  "okmshapeswitch.configuration.wheelholdmillis": "轮盘保留时长（毫秒）",
+  "okmshapeswitch.configuration.wheeloffsety": "轮盘垂直偏移",
+  "okmshapeswitch.configuration.showactionbar": "物品栏上方提示",
+  "okmshapeswitch.configuration.previewmode": "预览显示时机",
+  "okmshapeswitch.configuration.previewmaxblocks": "预览最大方块数",
+  "okmshapeswitch.configuration.previewalpha": "预览不透明度",
+  "okmshapeswitch.configuration.previewshoworigin": "高亮准星原方块",
+  "okmshapeswitch.configuration.previewuseokmlimits": "使用一键连锁的限制值",
+  "okmshapeswitch.configuration.excludedshapes": "排除的形状"
+}
