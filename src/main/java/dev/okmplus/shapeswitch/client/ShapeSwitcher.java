@@ -6,7 +6,7 @@ import dev.okmplus.shapeswitch.OkmShapeSwitch;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import org.xiyu.onekeyminer.api.OneKeyMinerAPI;
 
 /**
