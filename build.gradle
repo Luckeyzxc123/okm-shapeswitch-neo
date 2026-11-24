@@ -38,9 +38,7 @@ neoForge {
     }
 }
 
-// 不需要任何本地 jar：对 OneKeyMiner 的调用全部通过运行时反射完成
-// （OKM 的 NeoForge 发布包是 Forgix 重命名过的，形状类带 _neoforge 后缀，
-//  无法作为编译期依赖使用）。详见 OkmBridge。
+// 没有编译期依赖：对 OKM 的调用都在运行期反射完成（见 OkmBridge）。
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
